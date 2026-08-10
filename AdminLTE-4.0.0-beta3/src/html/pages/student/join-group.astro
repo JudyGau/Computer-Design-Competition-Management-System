@@ -1,0 +1,289 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/student-sidenav.astro";
+
+const title = "学生 - 加入队伍";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "student";
+const page = "join-group";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+    <style></style>
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">队伍列表</p>
+          <table
+            class="table table-head-fixed table-bordered text-center table-valign-middle"
+          >
+            <thead>
+              <tr class="align-middle">
+                <th>队伍名称</th>
+                <th>指导教师</th>
+                <th>人数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="group-list">
+              <!-- 可以继续添加更多的行 -->
+            </tbody>
+          </table>
+          <!-- 添加分页控件 -->
+          <div class="pagination justify-content-center mt-3">
+            <button id="prevBtn" class="btn btn-outline-primary btn-sm"
+              >上一页</button
+            >
+            <span id="pageNumbers" class="mx-2"></span>
+            <button id="nextBtn" class="btn btn-outline-primary btn-sm"
+              >下一页</button
+            >
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+    <script>
+      var student;
+      // 分页相关变量
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let items = []; // 存储全部数据
+
+      // 初始化函数
+      function initPagination() {
+        // 事件绑定
+        document
+          .getElementById("prevBtn")
+          ?.addEventListener("click", () => changePage(-1));
+        document
+          .getElementById("nextBtn")
+          ?.addEventListener("click", () => changePage(1));
+      }
+
+      // 渲染表格内容
+      function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = items.slice(start, end);
+
+        const groupList = document.getElementById("group-list");
+        groupList.innerHTML = pageData
+          .map(
+            (item) => `
+                <tr class="align-middle" key="${item.groupName}">
+                  <td>${item.groupName}</td>
+                  <td>${item.teacherId}</td>
+                  <td>${item.number}</td>
+                  <td>${item.groupName == student.applyGroupName ? `<button type="button" class="btn btn-outline-secondary" >申请中</button>` : item.groupName == student.groupName ? `<button type="button" class="btn btn-outline-success">已加入</button>` : `<button type="button" id="join-group" class="btn btn-outline-primary" data-groupName="${item.groupName}">加入</button>`}</td>
+                </tr>
+              `
+          )
+          .join("");
+
+        // 重新绑定事件
+        bindButtonEvents();
+        // 更新分页状态
+        renderPagination();
+      }
+
+      // 生成分页按钮
+      function renderPagination() {
+        const totalPages = Math.ceil(items.length / itemsPerPage);
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = "";
+
+        // 显示页码范围（最多显示5个）
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+          const btn = document.createElement("button");
+          btn.className = `btn btn-sm mx-1 ${i === currentPage ? "btn-primary" : "btn-outline-primary"}`;
+          btn.textContent = i;
+          btn.addEventListener("click", () => goToPage(i));
+          pageNumbers.appendChild(btn);
+        }
+
+        // 控制按钮状态
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+      }
+
+      // 分页控制函数
+      function changePage(step) {
+        currentPage = Math.max(1, currentPage + step);
+        renderTable();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+      }
+
+      // 按钮事件绑定函数
+      function bindButtonEvents() {
+        //加入按钮
+        document.querySelectorAll("#join-group").forEach((button) => {
+          button.addEventListener("click", function () {
+            const groupName = this.getAttribute("data-groupName");
+            // 在这里处理推送逻辑
+            console.log(`加入队伍 groupName: ${groupName}`);
+            fetch(
+              `http://localhost:8080/student/joinGroup?groupName=${groupName}`,
+              {
+                method: "get",
+                credentials: "include", //携带cookies
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            )
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.code == 200) {
+                  alert("已发送加入队伍申请");
+                  window.location.href = "../student/join-group.html";
+                } else {
+                  alert(data.message);
+                }
+              })
+              .catch((error) => {
+                console.error("请求失败:", error);
+                alert("请求失败，请重试。");
+              });
+          });
+        });
+      }
+
+      // 初始化分页
+      initPagination();
+
+      window.onload = function () {
+        fetch(`http://localhost:8080/student/getStudentInfo`, {
+          method: "get",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.code === 200) {
+              console.log(data.data);
+              student = data.data;
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+
+        fetch(`http://localhost:8080/student/getGroupOfSchool`, {
+          method: "get",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.code === 200) {
+              console.log(data.data);
+              items = data.data; // 保存全部数据
+              renderTable(); // 初始化渲染
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // window.onload = function () {
+      //   fetch(`http://localhost:8080/student/getGroupOfSchool`, {
+      //     method: "get",
+      //     credentials: "include", // 确保带上 Cookies
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //   })
+      //     .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+      //     .then((data) => {
+      //       console.log(data.data);
+
+      //       if (data.code === 200) {
+      //         const groupList = document.getElementById("group-list");
+      //         let items = data.data;
+      //         groupList.innerHTML = items
+      //           .map(
+      //             (item) => `
+      //           <tr class="align-middle" key="${item.groupName}">
+      //             <td>${item.groupName}</td>
+      //             <td>${item.teacherId}</td>
+      //             <td>${item.number}</td>
+      //             <td><button type="button" id="join-group" class="btn btn-outline-primary" data-groupName="${item.groupName}">加入</button></td>
+      //           </tr>
+      //         `
+      //           )
+      //           .join("");
+
+      //         document.querySelectorAll("#join-group").forEach((button) => {
+      //           button.addEventListener("click", function () {
+      //             const groupName = this.getAttribute("data-groupName");
+      //             // 在这里处理推送逻辑
+      //             console.log(`加入队伍 groupName: ${groupName}`);
+      //             fetch(
+      //               `http://localhost:8080/student/joinGroup?groupName=${groupName}`,
+      //               {
+      //                 method: "get",
+      //                 credentials: "include", //携带cookies
+      //                 headers: {
+      //                   "Content-Type": "application/json",
+      //                 },
+      //               }
+      //             )
+      //               .then((response) => response.json())
+      //               .then((data) => {
+      //                 if (data.code == 200) {
+      //                   alert("已发送加入队伍申请");
+      //                   window.location.href = "../student/my-group.html";
+      //                 } else {
+      //                   alert(data.message);
+      //                 }
+      //               })
+      //               .catch((error) => {
+      //                 console.error("请求失败:", error);
+      //                 alert("请求失败，请重试。");
+      //               });
+      //           });
+      //         });
+      //       } else {
+      //         alert(data.message); // 操作失败时的提示
+      //       }
+      //     })
+      //     .catch((error) => {
+      //       console.error("请求失败:", error);
+      //       alert("登录失败，请重试。");
+      //     });
+      // };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

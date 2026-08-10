@@ -1,0 +1,245 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/school-manager-sidenav.astro";
+
+const title = "校管理员 - 教师管理";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "school-manager";
+const page = "teacher-manage";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">教师</p>
+          <table
+            class="table table-head-fixed table-bordered text-center table-valign-middle"
+          >
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>工号</th>
+                <th>学校</th>
+                <th>职称</th>
+                <th>权限</th>
+                <th>操作</th>
+                <th>操作</th>
+                <th>操作</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="teacher-list">
+              <!-- 可以继续添加更多的行 -->
+            </tbody>
+          </table>
+          <!-- 添加分页控件 -->
+          <div class="pagination justify-content-center mt-3">
+            <button id="prevBtn" class="btn btn-outline-primary btn-sm"
+              >上一页</button
+            >
+            <span id="pageNumbers" class="mx-2"></span>
+            <button id="nextBtn" class="btn btn-outline-primary btn-sm"
+              >下一页</button
+            >
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+
+    <script>
+      window.onload = function () {
+        fetch(`http://localhost:8080/schoolManager/getTeacherOfSchool`, {
+          method: "get",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              const teacherList = document.getElementById("teacher-list");
+              let items = data.data;
+              teacherList.innerHTML = items
+                .map(
+                  (item) => `
+                <tr class="align-middle" key="${item.teacherId}">
+                  <td>${item.name}</td>
+                  <td>${item.teacherId}</td>
+                  <td>${item.school}</td>
+                  <td>${item.title}</td>
+                  <td>${item.identity == 1 ? "指导教师" : item.identity == 2 ? "校赛评委" : "无"}</td>
+                  <td><button type="button" id="give-identity-1" class="btn btn-outline-success" data-school="${item.school}" data-teacherId="${item.teacherId}">任命为指导教师</button></td>
+                  <td><button type="button" id="give-identity-2" class="btn btn-outline-success" data-school="${item.school}" data-teacherId="${item.teacherId}">任命为校赛评委</button></td>
+                  <td><button type="button" id="cancel-identity" class="btn btn-outline-warning" data-school="${item.school}" data-teacherId="${item.teacherId}">取消授权</button></td>
+                  <td><button type="button" id="delete-teacher" class="btn btn-outline-danger" data-school="${item.school}" data-teacherId="${item.teacherId}">删除</button></td>
+                  </tr>
+              `
+                )
+                .join("");
+              // 给每个删除按钮添加点击事件
+              document.querySelectorAll("#delete-teacher").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const school = this.getAttribute("data-school");
+                  const teacherId = this.getAttribute("data-teacherId");
+                  // 在这里处理删除逻辑
+                  console.log(`删除教师 : ${school}+${teacherId}`);
+                  fetch(
+                    `http://localhost:8080/schoolManager/deleteTeacher?school=${school}&teacherId=${teacherId}`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("删除教师成功");
+                        window.location.href =
+                          "../school-manager/teacher-manage.html";
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+              // 给每个任命指导教师按钮添加点击事件
+              document.querySelectorAll("#give-identity-1").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const school = this.getAttribute("data-school");
+                  const teacherId = this.getAttribute("data-teacherId");
+                  // 在这里处理授权逻辑
+                  console.log(`任命指导教师 : ${school}+${teacherId}`);
+                  fetch(
+                    `http://localhost:8080/schoolManager/updateIdentityOfTeacher?school=${school}&teacherId=${teacherId}&identity=1`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("任命指导教师成功");
+                        window.location.href =
+                          "../school-manager/teacher-manage.html";
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+              // 给每个任命校赛评委按钮添加点击事件
+              document.querySelectorAll("#give-identity-2").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const school = this.getAttribute("data-school");
+                  const teacherId = this.getAttribute("data-teacherId");
+                  // 在这里处理授权逻辑
+                  console.log(`任命校赛评委 : ${school}+${teacherId}`);
+                  fetch(
+                    `http://localhost:8080/schoolManager/updateIdentityOfTeacher?school=${school}&teacherId=${teacherId}&identity=2`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("任命校赛评委成功");
+                        window.location.href =
+                          "../school-manager/teacher-manage.html";
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+              // 给每个取消授权按钮添加点击事件
+              document
+                .querySelectorAll("#cancel-identity")
+                .forEach((button) => {
+                  button.addEventListener("click", function () {
+                    const school = this.getAttribute("data-school");
+                    const teacherId = this.getAttribute("data-teacherId");
+                    // 在这里处理取消授权逻辑
+                    console.log(`取消授权 : ${school}+${teacherId}`);
+                    fetch(
+                      `http://localhost:8080/schoolManager/updateIdentityOfTeacher?school=${school}&teacherId=${teacherId}&identity=0`,
+                      {
+                        method: "get",
+                        credentials: "include",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                      }
+                    )
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.code == 200) {
+                          alert("取消授权成功");
+                          window.location.href =
+                            "../school-manager/teacher-manage.html";
+                        } else {
+                          alert(data.message);
+                        }
+                      })
+                      .catch((error) => {
+                        console.error("请求失败:", error);
+                        alert("请求失败，请重试。");
+                      });
+                  });
+                });
+            } else {
+              alert(data.message); // 操作失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("登录失败，请重试。");
+          });
+      };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

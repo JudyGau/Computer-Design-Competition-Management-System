@@ -1,0 +1,128 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/student-sidenav.astro";
+
+const title = "学生 - 账号安全";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "student";
+const page = "security";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">绑定邮箱</p>
+
+          <form id="bindEmailForm">
+            <div class="input-group mb-3">
+              <label>邮箱地址：</label>
+              <input type="text" class="form-control" name="email" />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button id="bandEmail" type="button" class="btn btn-primary"
+                    >绑定</button
+                  >
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">修改密码</p>
+
+          <form id="updatePasswordForm">
+            <div class="input-group mb-3">
+              <label>旧密码：</label>
+              <input type="text" class="form-control" name="oldPassword" />
+            </div>
+            <div class="input-group mb-3">
+              <label>新密码：</label>
+              <input type="text" class="form-control" name="newPassword" />
+            </div>
+            <div class="input-group mb-3">
+              <label>确认密码：</label>
+              <input type="text" class="form-control" name="newRePassword" />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button
+                    id="updatePassword"
+                    type="button"
+                    class="btn btn-primary">确定</button
+                  >
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+      </div>
+      <Footer />
+    </div>
+
+    <script>
+      var bandBtn = document.getElementById("bandEmail");
+      var updateBtn = document.getElementById("updatePassword");
+
+      updateBtn.onclick = function () {
+        // 获取表单数据
+        const formData = {
+          oldPassword: document.querySelector('[name="oldPassword"]').value,
+          newPassword: document.querySelector('[name="newPassword"]').value,
+          newRePassword: document.querySelector('[name="newRePassword"]').value,
+        };
+
+        fetch("http://localhost:8080/student/updatePassword", {
+          method: "POST",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData), // 发送表单数据
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              // 修改密码成功后处理
+              alert("修改密码成功");
+              window.location.href = `../student/security.html`;
+            } else {
+              alert(data.message); // 修改密码失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

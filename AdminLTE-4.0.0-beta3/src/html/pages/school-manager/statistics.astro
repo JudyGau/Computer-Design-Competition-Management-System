@@ -1,0 +1,322 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/school-manager-sidenav.astro";
+
+const title = "校管理员 - 数据统计";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "school-manager";
+const page = "statistics";
+---
+
+<!doctype html>
+<html lang="zh-cn">
+  <!--begin::Head-->
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <style>
+      /* 卡片式图表样式 */
+      .charts-row {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .chart-card {
+        flex: 1;
+        min-width: 300px;
+      }
+
+      .chart-item {
+        height: 100%;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+      }
+
+      .chart-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .chart-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        font-weight: 600;
+        color: #2c3e50;
+        padding: 1rem 1.5rem;
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 280px;
+        width: 100%;
+      }
+
+      /* 响应式布局 */
+      @media (min-width: 1200px) {
+        .chart-card {
+          max-width: calc(33.33% - 1rem);
+        }
+      }
+
+      @media (max-width: 1199px) {
+        .charts-row {
+          justify-content: center;
+        }
+        .chart-card {
+          max-width: 48%;
+          flex: none;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .chart-card {
+          max-width: 100%;
+          min-width: 100%;
+        }
+      }
+
+      /* 卡片细节优化 */
+      .card-body {
+        padding: 1.25rem;
+      }
+
+      .chart-item .card-body {
+        padding: 1rem;
+      }
+    </style>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card school-dashboard" style="height:100%; width:100%;">
+        <!-- 标题部分 -->
+        <div class="card-header bg-primary text-white">
+          <h3 class="card-title mb-0">
+            <i class="fas fa-university mr-2"></i>学校总体数据
+          </h3>
+        </div>
+
+        <!-- 数据概览 -->
+        <div class="card-body">
+          <div class="alert alert-info" role="alert">
+            <div id="content" class="h5 mb-0"></div>
+          </div>
+        </div>
+
+        <!-- 图表卡片容器 -->
+        <div class="card-body charts-container">
+          <div class="charts-row">
+            <!-- 分类统计卡片 -->
+            <div class="chart-card">
+              <div class="card chart-item">
+                <div class="card-header chart-header">
+                  <i class="fas fa-chart-pie mr-2"></i>分类统计
+                </div>
+                <div class="card-body">
+                  <div class="chart-wrapper">
+                    <canvas id="category-pieChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 成绩分布卡片 -->
+            <div class="chart-card">
+              <div class="card chart-item">
+                <div class="card-header chart-header">
+                  <i class="fas fa-percentage mr-2"></i>成绩分布
+                </div>
+                <div class="card-body">
+                  <div class="chart-wrapper">
+                    <canvas id="score-pieChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 奖项统计卡片 -->
+            <div class="chart-card">
+              <div class="card chart-item">
+                <div class="card-header chart-header">
+                  <i class="fas fa-trophy mr-2"></i>奖项统计
+                </div>
+                <div class="card-body">
+                  <div class="chart-wrapper">
+                    <canvas id="award-barChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+
+      <script type="module">
+        // 导入 Chart.js 库
+        import Chart from "../../../../node_modules/chart.js/auto";
+        // 使用 fetch 获取后端数据并显示在饼状图中
+        fetch("http://localhost:8080/schoolManager/getSchoolStatisticsInfo", {
+          method: "get",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.code == 200) {
+              console.log(data.data);
+              // 将文本显示到页面
+              document.getElementById("content").textContent = data.data.str;
+
+              // 获取后端返回的数据
+              const CategoryPiechartData = {
+                labels: data.data.category,
+                datasets: [
+                  {
+                    data: data.data.categoryWorkNumber,
+                    //backgroundColor: data.data.backgroundColor,
+                    hoverOffset: 4,
+                  },
+                ],
+              };
+
+              // 获取 canvas 元素并初始化图表
+              const ctx1 = document
+                .getElementById("category-pieChart")
+                .getContext("2d");
+              new Chart(ctx1, {
+                type: "pie",
+                data: CategoryPiechartData,
+                options: {
+                  responsive: true, // 使图表响应式
+                  maintainAspectRatio: false, // 防止宽高比固定，允许图表根据容器大小缩放
+                },
+              });
+
+              // 获取后端返回的数据
+              const ScorePiechartData = {
+                labels: data.data.score,
+                datasets: [
+                  {
+                    data: data.data.scoreWorkNumber,
+                    //backgroundColor: data.data.backgroundColor,
+                    hoverOffset: 4,
+                  },
+                ],
+              };
+
+              // 获取 canvas 元素并初始化图表
+              const ctx2 = document
+                .getElementById("score-pieChart")
+                .getContext("2d");
+              new Chart(ctx2, {
+                type: "pie",
+                data: ScorePiechartData,
+                options: {
+                  responsive: true, // 使图表响应式
+                  maintainAspectRatio: false, // 防止宽高比固定，允许图表根据容器大小缩放
+                },
+              });
+
+              // 获取后端返回的数据
+              const awardBarchartData = {
+                labels: data.data.award,
+                datasets: [
+                  {
+                    label: "作品数量", // 数据集标签
+                    data: data.data.awardWorkNumber, // 对应每个标签的数据
+                    // backgroundColor: "rgba(75, 192, 192, 0.2)", // 柱子颜色
+                    // borderColor: "rgba(75, 192, 192, 1)", // 边框颜色
+                    borderWidth: 1, // 边框宽度
+                  },
+                ],
+              };
+
+              // 获取 canvas 元素并初始化图表
+              const ctx3 = document
+                .getElementById("award-barChart")
+                .getContext("2d");
+              new Chart(ctx3, {
+                type: "bar",
+                data: {
+                  ...awardBarchartData,
+                  datasets: [
+                    {
+                      ...awardBarchartData.datasets[0],
+                      // 为每个柱子设置不同颜色
+                      backgroundColor: [
+                        "#4dc9f6",
+                        "#f67019",
+                        "#f53794",
+                        "#537bc4",
+                        "#acc236",
+                        "#166a8f",
+                        "#00a950",
+                        "#58595b",
+                        "#8549ba",
+                      ].map((color) => color + "CC"), // 添加透明度
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: { display: false },
+                      ticks: {
+                        precision: 0, // 强制显示整数
+                        callback: function (value) {
+                          if (value % 1 === 0) {
+                            return value;
+                          }
+                        },
+                      },
+                      title: {
+                        display: true,
+                        text: "作品数量",
+                      },
+                    },
+                    x: {
+                      grid: { display: false },
+                      title: {
+                        display: true,
+                        text: "奖项",
+                      },
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      display: false, // 隐藏图例
+                    },
+                  },
+                },
+              });
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      </script>
+
+      <Scripts path={path} />
+    </div>
+  </body>
+</html>

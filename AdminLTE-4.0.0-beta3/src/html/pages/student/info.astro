@@ -1,0 +1,213 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/student-sidenav.astro";
+
+const title = "学生 - 个人信息";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "student";
+const page = "info";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">信息填写</p>
+
+          <form
+            id="loginForm"
+            action="http://localhost:8080/student/saveStudentInfo"
+            method="post"
+          >
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="姓名"
+                name="name"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="学校"
+                name="school"
+                disabled
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="身份"
+                name="identity"
+                disabled
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="专业"
+                name="major"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="入学年份"
+                name="enterYear"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="学历"
+                name="eduBackground"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="年级"
+                name="grade"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="邮箱"
+                name="email"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="手机"
+                name="telephone"
+              />
+            </div>
+
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="学号"
+                name="studentId"
+                disabled
+              />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button id="save" type="submit" class="btn btn-primary"
+                    >保存</button
+                  >
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+      </div>
+      <Footer />
+    </div>
+    <script>
+      // 当页面加载完成时，获取数据并填充表单
+      window.onload = function () {
+        // 使用 Fetch API 从后端获取数据
+        fetch(`http://localhost:8080/student/getStudentInfo`, {
+          credentials: "include", // 确保带上 Cookies
+        })
+          .then((response) => response.json()) // 解析 JSON 数据
+          .then((data) => {
+            console.log(data);
+            // 将返回的数据填充到表单
+            document.querySelector('[name="name"]').value = data.data.name;
+            document.querySelector('[name="school"]').value = data.data.school;
+            document.querySelector('[name="identity"]').value = "学生";
+            document.querySelector('[name="major"]').value = data.data.major;
+            document.querySelector('[name="enterYear"]').value =
+              data.data.enterYear;
+            document.querySelector('[name="eduBackground"]').value =
+              data.data.eduBackground;
+            document.querySelector('[name="grade"]').value = data.data.grade;
+            document.querySelector('[name="email"]').value = data.data.email;
+            document.querySelector('[name="telephone"]').value =
+              data.data.telephone;
+            document.querySelector('[name="studentId"]').value =
+              data.data.studentId;
+          })
+          .catch((error) => console.error("Error fetching form data:", error));
+      };
+
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // 阻止默认的表单提交行为
+          // 获取表单数据
+          const formData = {
+            name: document.querySelector('[name="name"]').value,
+            school: document.querySelector('[name="school"]').value,
+            identity: document.querySelector('[name="identity"]').value,
+            major: document.querySelector('[name="major"]').value,
+            enterYear: document.querySelector('[name="enterYear"]').value,
+            eduBackground: document.querySelector('[name="eduBackground"]')
+              .value,
+            grade: document.querySelector('[name="grade"]').value,
+            telephone: document.querySelector('[name="telephone"]').value,
+            email: document.querySelector('[name="email"]').value,
+            studentId: document.querySelector('[name="studentId"]').value,
+          };
+
+          fetch("http://localhost:8080/student/saveStudentInfo", {
+            method: "POST",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData), // 发送表单数据
+          })
+            .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+            .then((data) => {
+              console.log(data.data);
+
+              if (data.code === 200) {
+                // 保存成功后处理
+                window.location.href = "../student/info.html"; // 重新跳转到个人信息页面
+              } else {
+                alert(data.message); // 保存失败时的提示
+              }
+            })
+            .catch((error) => {
+              console.error("请求失败:", error);
+              alert("登录失败，请重试。");
+            });
+        });
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

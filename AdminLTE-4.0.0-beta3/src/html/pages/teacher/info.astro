@@ -1,0 +1,188 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/teacher-sidenav.astro";
+
+const title = "教师 - 个人信息";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "teacher";
+const page = "info";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">信息填写</p>
+
+          <form
+            id="loginForm"
+            action="http://localhost:8080/teacherLogin"
+            method="post"
+          >
+            <div class="input-group mb-3">
+              <label>姓名：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="姓名"
+                name="name"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>学校：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="学校"
+                name="school"
+                disabled
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>权限：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="权限"
+                name="identity"
+                disabled
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>工号：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="工号"
+                name="teacherId"
+                disabled
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>手机：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="手机"
+                name="telephone"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>邮箱：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="邮箱"
+                name="email"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <label>职称：</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="职称"
+                name="title"
+                id="title"
+              />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+      </div>
+      <Footer />
+    </div>
+    <script>
+      const str = ["无", "指导教师", "校赛评委"];
+      const book = [{ 无: 0 }, { 指导教师: 1 }, { 校赛评委: 2 }];
+      // 当页面加载完成时，获取数据并填充表单
+      window.onload = function () {
+        // 使用 Fetch API 从后端获取数据
+        fetch(`http://localhost:8080/teacher/getTeacherInfo`, {
+          credentials: "include", // 确保带上 Cookies
+        })
+          .then((response) => response.json()) // 解析 JSON 数据
+          .then((data) => {
+            console.log(data);
+            // 将返回的数据填充到表单
+            document.querySelector('[name="name"]').value = data.data.name;
+            document.querySelector('[name="school"]').value = data.data.school;
+            document.querySelector('[name="identity"]').value =
+              str[data.data.identity];
+            document.querySelector('[name="teacherId"]').value =
+              data.data.teacherId;
+            document.querySelector('[name="telephone"]').value =
+              data.data.telephone;
+            document.querySelector('[name="email"]').value = data.data.email;
+
+            document.querySelector('[id="title"]').value = data.data.title;
+          })
+          .catch((error) => console.error("Error fetching form data:", error));
+      };
+
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // 阻止默认的表单提交行为
+          // 获取表单数据
+          const formData = {
+            name: document.querySelector('[name="name"]').value,
+            school: document.querySelector('[name="school"]').value,
+            identity: book[document.querySelector('[name="identity"]').value],
+            teacherId: document.querySelector('[name="teacherId"]').value,
+            telephone: document.querySelector('[name="telephone"]').value,
+            email: document.querySelector('[name="email"]').value,
+            title: document.querySelector('[id="title"]').value,
+          };
+          console.log(formData.title);
+
+          fetch("http://localhost:8080/teacher/saveTeacherInfo", {
+            method: "POST",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData), // 发送表单数据
+          })
+            .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+            .then((data) => {
+              if (data.code === 200) {
+                // 保存成功后处理
+                window.location.href = "../teacher/info.html"; // 重新跳转到个人信息页面
+              } else {
+                alert(data.message); // 保存失败时的提示
+              }
+            })
+            .catch((error) => {
+              console.error("请求失败:", error);
+              alert("保存失败，请重试。");
+            });
+        });
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

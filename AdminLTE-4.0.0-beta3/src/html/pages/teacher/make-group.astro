@@ -1,0 +1,107 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/teacher-sidenav.astro";
+
+const title = "教师 - 创建队伍";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "teacher";
+const page = "make-group";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 50%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">新建队伍</p>
+          <form
+            id="makeGroupForm"
+            action="http://localhost:8080/makeGroup"
+            method="post"
+          >
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="队伍名称"
+                name="name"
+              />
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="队伍人数"
+                name="number"
+              />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary">新建</button>
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+      </div>
+      <Footer />
+    </div>
+    <script>
+      document
+        .getElementById("makeGroupForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // 阻止默认的表单提交行为
+          // 获取表单数据
+          const formData = {
+            groupName: document.querySelector('[name="name"]').value,
+            number: document.querySelector('[name="number"]').value,
+          };
+          if (formData.groupName == "") {
+            alert("队伍名称不能为空");
+            return;
+          }
+
+          fetch("http://localhost:8080/teacher/makeGroup", {
+            method: "POST",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData), // 发送表单数据
+          })
+            .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+            .then((data) => {
+              if (data.code === 200) {
+                // 新增成功后处理
+                window.location.href = "../teacher/manage-group.html"; // 跳转到队伍管理页面
+              } else {
+                alert(data.message); // 新增失败时的提示
+              }
+            })
+            .catch((error) => {
+              console.error("请求失败:", error);
+              alert("新增失败，请重试。");
+            });
+        });
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

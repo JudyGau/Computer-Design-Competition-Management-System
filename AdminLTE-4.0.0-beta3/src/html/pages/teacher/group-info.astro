@@ -1,0 +1,611 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/teacher-sidenav.astro";
+
+const title = "教师 - 队伍信息";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "teacher";
+const page = "my-group";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <style>
+      .group-form {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 1.5rem auto;
+        max-width: 800px;
+      }
+
+      .input-group {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #4a5568;
+        font-size: 1rem;
+        text-align: center;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-input:read-only {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .group-form {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .input-group {
+          width: 100%;
+        }
+      }
+
+      /* 可选：添加微交互效果 */
+      .form-input:hover {
+        border-color: #cbd5e0;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #4e73df;
+        box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
+      }
+      /* 弹窗样式 */
+      .modal {
+        display: none; /* 初始时隐藏 */
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">队伍信息</p>
+          <form id="groupForm" class="group-form">
+            <div class="input-group">
+              <label class="form-label">队名</label>
+              <input type="text" class="form-input" name="groupName" readonly />
+            </div>
+            <div class="input-group">
+              <label class="form-label">人数</label>
+              <input type="text" class="form-input" name="number" readonly />
+            </div>
+            <div class="input-group">
+              <label class="form-label">指导教师</label>
+              <input type="text" class="form-input" name="teacher" readonly />
+            </div>
+          </form>
+        </div>
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">成员</p>
+
+          <table class="table table-bordered text-center table-valign-middle">
+            <thead>
+              <tr>
+                <th>学校</th>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="student-list">
+              <!-- 数据将通过 JavaScript 填充 -->
+            </tbody>
+          </table>
+        </div>
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">作品</p>
+          <table class="table table-bordered text-center table-valign-middle">
+            <thead>
+              <tr>
+                <th>作品大类</th>
+                <th>作品小类</th>
+                <th>作品名称</th>
+                <th>状态</th>
+                <th>操作</th>
+                <th>操作</th>
+                <th>操作</th>
+                <th>校赛</th>
+                <th>省赛</th>
+              </tr>
+            </thead>
+            <tbody id="work-list">
+              <!-- 数据将通过 JavaScript 填充 -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-body login-card-body">
+          <button id="openBtn" class="btn btn-primary">新建作品</button>
+
+          <!-- 弹窗 -->
+          <div id="myModal" class="modal">
+            <div class="modal-content">
+              <span class="close">&times;</span>
+              <form id="makeWork">
+                <div class="input-group mb-3">
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="text-align: left;"
+                    placeholder="作品名称"
+                    name="workName"
+                  />
+                </div>
+                <div class="input-group mb-3">
+                  <!-- 下拉框 -->
+                  <select id="dropdown" class="form-input" style="text-align: left;">
+                    <option value="" selected disabled>请选择作品大类</option>
+                    <option value="软件应用与开发">软件应用与开发</option>
+                    <option value="微课与AI辅助教学">微课与AI辅助教学</option>
+                    <option value="物联网应用">物联网应用</option>
+                    <option value="大数据应用">大数据应用</option>
+                    <option value="人工智能应用">人工智能应用</option>
+                    <option value="信息可视化设计">信息可视化设计</option>
+                    <option value="数媒静态设计">数媒静态设计</option>
+                    <option value="数媒动漫与短片">数媒动漫与短片</option>
+                    <option value="数媒游戏与交互设计"
+                      >数媒游戏与交互设计</option
+                    >
+                    <option value="计算机音乐创作">计算机音乐创作</option>
+                    <option value="国际生“汉学”">国际生“汉学”</option>
+                  </select>
+                </div>
+                <div class="input-group mb-3">
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="text-align: left;"
+                    placeholder="作品小类"
+                    name="subclass"
+                  />
+                </div>
+
+                <!-- <label for="file">选择文件:</label>
+                <input type="file" name="file" id="file" /> -->
+
+                <!--begin::Row-->
+                <div class="row">
+                  <div class="col-4">
+                    <div class="d-grid gap-2">
+                      <button
+                        id="submitBtn"
+                        type="button"
+                        class="btn btn-primary">新建</button
+                      >
+                    </div>
+                  </div>
+                </div>
+                <!--end::Row-->
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+
+    <Scripts path={path} />
+    <script>
+      // 获取 URL 参数
+      const params = new URLSearchParams(window.location.search);
+      const groupName = params.get("group"); // 获取 'group' 参数的值
+      console.log(groupName);
+      window.onload = function () {
+        fetch(
+          `http://localhost:8080/teacher/getGroupInfo?groupName=${groupName}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              // 操作成功后处理
+              document.querySelector('[name="groupName"]').value =
+                data.data.groupName;
+              document.querySelector('[name="number"]').value =
+                data.data.number;
+              document.querySelector('[name="teacher"]').value =
+                data.data.teacherId;
+            } else {
+              alert(data.message); // 操作失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("登录失败，请重试。");
+          });
+
+        fetch(
+          `http://localhost:8080/teacher/getStudentOfGroup?groupName=${groupName}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+            if (data.code === 200) {
+              const studentList = document.getElementById("student-list");
+              let items = data.data;
+              studentList.innerHTML = items
+                .map(
+                  (item) => `
+                <tr class="align-middle" key="${item.studentId}">
+                  <td>${item.school}</td>
+                  <td>${item.studentId}</td>
+                  <td>${item.name}</td>
+                  <td><button type="button" id="delete-student" class="btn btn-outline-danger" data-school="${item.school}" data-id="${item.studentId}">删除</button></a></td>
+                </tr>
+              `
+                )
+                .join("");
+              // 给每个删除按钮添加点击事件
+              document.querySelectorAll("#delete-student").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const studentId = this.getAttribute("data-id");
+                  const school = this.getAttribute("data-school");
+                  // 在这里处理删除逻辑
+                  console.log(`删除学生 ID: ${studentId}`);
+                  fetch(
+                    `http://localhost:8080/teacher/deleteStudentFromGroup?groupName=${groupName}&school=${school}&studentId=${studentId}`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("删除学生成功");
+                        window.location.href = `../teacher/group-info.html?group=${groupName}`;
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+            } else {
+              alert(data.message); // 操作失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+
+        fetch(
+          `http://localhost:8080/teacher/getWorkList?groupName=${groupName}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              const workList = document.getElementById("work-list");
+              let items = data.data;
+              workList.innerHTML = items
+                .map(
+                  (item) => `
+                <tr class="align-middle" key="${item.workName}">
+                  <td>${item.category}</td>
+                  <td>${item.subclass}</td>
+                  <td>${item.workName}</td>
+                  <td>${item.isSubmitted == 1 ? "学生已提交" : "学生未提交"}</td>
+                  <td><button type="button" id="delete-work" class="btn btn-outline-danger" data-workName="${item.workName}">删除</button></td>
+                  <td><button type="button" id="download-work" class="btn btn-outline-primary" data-workName="${item.workName}">下载</button></td>
+                  <td><button type="button" id="send-work" class="btn btn-outline-success" data-workName="${item.workName}">通过</button></td>
+                  <td>${item.isSchoolCompetition == 1 ? "是" : "否"}</td>
+                  <td>${item.isProvinceCompetition == 1 ? "是" : "否"}</td>
+                </tr>
+              `
+                )
+                .join("");
+              // 给每个删除按钮添加点击事件
+              document.querySelectorAll("#delete-work").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const workName = this.getAttribute("data-workName");
+                  // 在这里处理删除逻辑
+                  console.log(`删除作品 workName: ${workName}`);
+                  fetch(
+                    `http://localhost:8080/teacher/deleteWork?workName=${workName}`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("删除作品成功");
+                        window.location.href = `../teacher/group-info.html?group=${groupName}`;
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+
+              // 给每个下载按钮添加点击事件
+              document.querySelectorAll("#download-work").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const workName = this.getAttribute("data-workName");
+                  // 在这里处理下载逻辑
+                  console.log(`下载作品 workName: ${workName}`);
+                  fetch(
+                    `http://localhost:8080/teacher/downloadWork?workName=${workName}`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                    }
+                  )
+                    .then((response) => {
+                      // 先检查响应状态
+                      if (!response.ok) {
+                        // 状态码非 200-299 时进入逻辑
+                        if (response.status === 404) {
+                          throw new Error("学生尚未提交作品文件"); // 抛出明确错误
+                        } else {
+                          throw new Error(
+                            `请求失败，状态码: ${response.status}`
+                          ); // 通用错误提示
+                        }
+                      }
+                      return response.blob(); // 仅当响应正常时继续处理
+                    }) // 将响应转为 blob 对象
+                    .then((blob) => {
+                      // 创建一个 URL 链接指向下载文件
+
+                      const link = document.createElement("a");
+                      link.href = URL.createObjectURL(blob); // 创建一个指向文件的 URL
+                      link.download = workName; // 设置下载文件的名字
+                      link.click(); // 自动点击下载链接
+                      URL.revokeObjectURL(link.href); // 清理 URL 对象
+                    })
+                    .catch((error) => {
+                      console.error("下载文件失败:", error);
+                      alert("下载失败！" + error);
+                    });
+                });
+              });
+
+              //给每个通过按钮添加点击事件
+              document.querySelectorAll("#send-work").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const workName = this.getAttribute("data-workName");
+                  // 在这里处理通过逻辑
+                  console.log(`通过作品 workName: ${workName}`);
+                  fetch(
+                    `http://localhost:8080/teacher/sendToSchoolCompetition?workName=${workName}`,
+                    {
+                      method: "get",
+                      credentials: "include",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.code == 200) {
+                        alert("成功提交作品到校赛");
+                        window.location.href = `../teacher/group-info.html?group=${groupName}`;
+                      } else {
+                        alert(data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("请求失败:", error);
+                      alert("请求失败，请重试。");
+                    });
+                });
+              });
+            } else {
+              alert(data.message); // 操作失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // 获取元素
+      var modal = document.getElementById("myModal");
+      var btn = document.getElementById("openBtn");
+      var span = document.getElementsByClassName("close")[0];
+      var submitBtn = document.getElementById("submitBtn");
+
+      // 打开弹窗
+      btn.onclick = function () {
+        modal.style.display = "block";
+      };
+
+      // 关闭弹窗
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      // 点击提交按钮
+      submitBtn.onclick = function () {
+        // const fileInput = document.getElementById("file");
+        // const file = fileInput.files[0]; // 获取文件
+
+        // if (!file) {
+        //   alert("请选择一个文件！");
+        //   return;
+        // }
+
+        // // 修改文件名
+        // const newFileName =
+        //   document.querySelector('[name="workName"]').value +
+        //   file.name.slice(file.name.lastIndexOf("."));
+
+        // // 创建新的文件对象，保持原有文件的内容，但修改文件名
+        // const newFile = new File([file], newFileName, { type: file.type });
+
+        // const fileData = new FormData();
+        // fileData.append("file", newFile); // 将新的文件附加到FormData对象
+
+        // // 使用fetch API发送POST请求
+        // fetch("http://localhost:8080/teacher/uploadWork", {
+        //   method: "POST",
+        //   body: fileData,
+        //   credentials: "include", // 确保带上 Cookies
+        // })
+        //   .then((response) => response.json()) // 假设返回的是JSON
+        //   .then((data) => {
+        //     if (data.code == 200) {
+        //       console.log("文件上传成功:", data);
+        //       alert("文件上传成功！");
+        //     } else {
+        //       alert(data.message);
+        //     }
+        //   })
+        //   .catch((error) => {
+        //     console.error("上传失败:", error);
+        //     alert("文件上传失败！");
+        //   });
+
+        // 获取表单数据
+        const formData = {
+          workName: document.querySelector('[name="workName"]').value,
+          category: document.querySelector('[name="category"]').value,
+          subclass: document.querySelector('[name="subclass"]').value,
+          groupName: document.querySelector('[name="groupName"]').value,
+        };
+
+        fetch("http://localhost:8080/teacher/makeWork", {
+          method: "POST",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData), // 发送表单数据
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              // 保存成功后处理
+              modal.style.display = "none";
+              alert("新建成功");
+              window.location.href = `../teacher/group-info.html?group=${groupName}`;
+            } else {
+              alert(data.message); // 保存失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // 点击弹窗外区域关闭弹窗
+      window.onclick = function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,261 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/student-sidenav.astro";
+
+const title = "学生 - 作品查询";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "student";
+const page = "work-query";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+    <style>
+      .group-form {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 1.5rem auto;
+        /* max-width: 800px; */
+      }
+
+      .input-group {
+        flex: 1;
+        min-width: 130px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #4a5568;
+        font-size: 1rem;
+        text-align: center;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-input:read-only {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .group-form {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .input-group {
+          width: 100%;
+        }
+      }
+
+      /* 可选：添加微交互效果 */
+      .form-input:hover {
+        border-color: #cbd5e0;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #4e73df;
+        box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
+      }
+
+      .tooltip {
+        position: absolute;
+        background-color: #333;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        display: none;
+        z-index: 1000;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;">
+        <div class="card-body login-card-body" style="width: 50%;">
+          <p class="login-box-msg">作品查询</p>
+
+          <form id="workQueryForm">
+            <div class="input-group mb-3">
+              <label class="form-label">作品名称</label>
+              <input
+                type="text"
+                class="form-input"
+                style="text-align: left;"
+                id="queryWorkName"
+              />
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button type="button" id="query" class="btn btn-primary"
+                    >查询</button
+                  >
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+        </div>
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">作品信息</p>
+          <form id="groupForm" class="group-form">
+            <div class="input-group">
+              <label class="form-label">作品名称</label>
+              <input type="text" class="form-input" id="workName" readonly />
+            </div>
+            <div class="input-group">
+              <label class="form-label">创作队伍</label>
+              <input type="text" class="form-input" id="groupName" readonly />
+            </div>
+            <div class="input-group">
+              <label class="form-label">校赛</label>
+              <input
+                type="text"
+                class="form-input"
+                id="isSchoolCompetition"
+                readonly
+              />
+            </div>
+            <div class="input-group">
+              <label class="form-label">省赛</label>
+              <input
+                type="text"
+                class="form-input"
+                id="isProvinceCompetition"
+                readonly
+              />
+            </div>
+            <div class="input-group">
+              <label class="form-label">评审状态</label>
+              <input type="text" class="form-input" id="isApproved" readonly />
+            </div>
+
+            <div class="input-group">
+              <label class="form-label">省赛得分</label>
+              <input type="text" class="form-input" id="score" readonly />
+            </div>
+            <div class="input-group">
+              <label class="form-label">获奖</label>
+              <input type="text" class="form-input" id="award" readonly />
+            </div>
+          </form>
+          <form
+            id="groupForm"
+            class="group-form"
+            style="width: 50%;margin-left: 0;"
+          >
+            <div class="input-group">
+              <label class="form-label">评审反馈</label>
+              <input type="text" class="form-input" id="comment" readonly />
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+    <script>
+      const award = ["无", "一等奖", "二等奖", "三等奖"];
+      document.getElementById("query").onclick = function () {
+        const workName = document.getElementById("queryWorkName")?.value;
+        fetch(`http://localhost:8080/student/queryWork?workName=${workName}`, {
+          method: "get",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            if (data.code === 200) {
+              console.log(data.data);
+              document.querySelector("#workName").value = data.data.workName;
+              document.querySelector("#groupName").value = data.data.groupName;
+              document.querySelector("#isSchoolCompetition").value =
+                data.data.isSchoolCompetition == 1 ? "是" : "否";
+              document.querySelector("#isProvinceCompetition").value =
+                data.data.isProvinceCompetition == 1 ? "是" : "否";
+              document.querySelector("#isApproved").value =
+                data.data.isApproved == 0
+                  ? "未审核"
+                  : data.data.isApproved == 1
+                    ? "通过"
+                    : "不通过";
+              document.querySelector("#comment").value = data.data.comment;
+              document.querySelector("#score").value =
+                data.data.score == -1 ? "未评分" : data.data.score;
+              document.querySelector("#award").value = award[data.data.award];
+
+              alert("查询作品成功");
+              //window.location.href = "../student/work-query.html";
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // 获取元素
+      const input = document.getElementById("comment");
+      const tooltip = document.getElementById("tooltip");
+
+      // 鼠标悬停事件处理
+      input.addEventListener("mouseover", function (e) {
+        // 获取输入框的值
+        const text = input.value;
+        // 设置提示内容
+        tooltip.innerHTML = text;
+        // 显示提示
+        tooltip.style.display = "block";
+
+        // 定位提示框在输入框下方
+        const rect = input.getBoundingClientRect();
+        tooltip.style.left = rect.left + "px";
+        tooltip.style.top = rect.bottom + "px";
+      });
+
+      // 鼠标移出事件处理
+      input.addEventListener("mouseout", function (e) {
+        tooltip.style.display = "none";
+      });
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

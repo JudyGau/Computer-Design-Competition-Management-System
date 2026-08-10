@@ -1,0 +1,358 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/manager-sidenav.astro";
+
+const title = "省赛管理员 - 作品自动评奖";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "manager";
+const page = "work-award";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+    <style>
+      .group-form {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 1.5rem auto;
+        max-width: 800px;
+      }
+
+      .input-group {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #4a5568;
+        font-size: 1rem;
+        text-align: center;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-input:read-only {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .group-form {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .input-group {
+          width: 100%;
+        }
+      }
+
+      /* 可选：添加微交互效果 */
+      .form-input:hover {
+        border-color: #cbd5e0;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #4e73df;
+        box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
+      }
+    </style>
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">颁奖设置</p>
+          <form id="groupForm" class="group-form">
+            <div class="input-group">
+              <label class="form-label">一等奖</label>
+              <input
+                type="text"
+                class="form-input"
+                id="first-award"
+                placeholder="一等奖比例"
+              />
+            </div>
+            <div class="input-group">
+              <label class="form-label">二等奖</label>
+              <input
+                type="text"
+                class="form-input"
+                id="second-award"
+                placeholder="二等奖比例"
+              />
+            </div>
+            <div class="input-group">
+              <label class="form-label">三等奖</label>
+              <input
+                type="text"
+                class="form-input"
+                id="third-award"
+                placeholder="三等奖比例"
+              />
+            </div>
+            <div class="input-group">
+              <button id="auto-award" type="button" class="btn btn-primary"
+                >自动评奖</button
+              >
+            </div>
+          </form>
+        </div>
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">获奖列表</p>
+          <!-- 下拉框 -->
+
+          <div class="input-group mb-3">
+            <select id="dropdown" class="form-input" style="width: 18%;">
+              <option value="" selected disabled>请选择</option>
+              <!-- 默认选项，不能选择 -->
+              <option value="软件应用与开发">软件应用与开发</option>
+              <option value="微课与AI辅助教学">微课与AI辅助教学</option>
+              <option value="物联网应用">物联网应用</option>
+              <option value="大数据应用">大数据应用</option>
+              <option value="人工智能应用">人工智能应用</option>
+              <option value="信息可视化设计">信息可视化设计</option>
+              <option value="数媒静态设计">数媒静态设计</option>
+              <option value="数媒动漫与短片">数媒动漫与短片</option>
+              <option value="数媒游戏与交互设计">数媒游戏与交互设计</option>
+              <option value="计算机音乐创作">计算机音乐创作</option>
+              <option value="国际生“汉学”">国际生“汉学”</option>
+            </select>
+          </div>
+          <table
+            class="table table-head-fixed table-bordered text-center table-valign-middle"
+          >
+            <thead>
+              <tr>
+                <th>作品名称</th>
+                <th>队伍</th>
+                <th>得分</th>
+                <th>获奖等级</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="work-list"> </tbody>
+          </table>
+          <!-- 添加分页控件 -->
+          <div class="pagination justify-content-center mt-3">
+            <button id="prevBtn" class="btn btn-outline-primary btn-sm"
+              >上一页</button
+            >
+            <span id="pageNumbers" class="mx-2"></span>
+            <button id="nextBtn" class="btn btn-outline-primary btn-sm"
+              >下一页</button
+            >
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+    <script>
+      document.getElementById("auto-award").onclick = function () {
+        const firstAward = document.querySelector("#first-award")?.value;
+        const secondAward = document.querySelector("#second-award")?.value;
+        const thirdAward = document.querySelector("#third-award")?.value;
+        console.log(firstAward, secondAward, thirdAward);
+
+        fetch(
+          `http://localhost:8080/manager/autoAward?firstAward=${firstAward}&secondAward=${secondAward}&thirdAward=${thirdAward}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              alert("自动颁奖完成");
+            } else {
+              alert(data.message); // 操作失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // 分页相关变量
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let items = []; // 存储全部数据
+
+      // 初始化函数
+      function initPagination() {
+        // 事件绑定
+        document
+          .getElementById("prevBtn")
+          .addEventListener("click", () => changePage(-1));
+        document
+          .getElementById("nextBtn")
+          .addEventListener("click", () => changePage(1));
+      }
+
+      // 渲染表格内容
+      function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = items.slice(start, end);
+
+        const workList = document.getElementById("work-list");
+        workList.innerHTML = pageData
+          .map(
+            (item) => `
+                <tr class="align-middle" key="${item.workName}">
+                  <td>${item.workName}</td>
+                  <td>${item.groupName}</td>
+                  <td>${item.score == -1 ? "未评分" : item.score}</td>
+                  <td>${item.award == 1 ? "一等奖" : item.award == 2 ? "二等奖" : "三等奖"}</td>
+                  <td><button type="button" id="download-work" class="btn btn-outline-primary" data-workName="${item.workName}">下载</button></td>
+                </tr>
+              `
+          )
+          .join("");
+
+        // 重新绑定事件
+        bindButtonEvents();
+
+        // 更新分页状态
+        renderPagination();
+      }
+
+      // 生成分页按钮
+      function renderPagination() {
+        const totalPages = Math.ceil(items.length / itemsPerPage);
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = "";
+
+        // 显示页码范围（最多显示5个）
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+          const btn = document.createElement("button");
+          btn.className = `btn btn-sm mx-1 ${i === currentPage ? "btn-primary" : "btn-outline-primary"}`;
+          btn.textContent = i;
+          btn.addEventListener("click", () => goToPage(i));
+          pageNumbers.appendChild(btn);
+        }
+
+        // 控制按钮状态
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+      }
+
+      // 分页控制函数
+      function changePage(step) {
+        currentPage = Math.max(1, currentPage + step);
+        renderTable();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+      }
+
+      // 按钮事件绑定函数
+      function bindButtonEvents() {
+        // 给每个下载按钮添加点击事件
+        document.querySelectorAll("#download-work").forEach((button) => {
+          button.addEventListener("click", function () {
+            const workName = this.getAttribute("data-workName");
+            // 在这里处理下载逻辑
+            console.log(`下载作品 workName: ${workName}`);
+            fetch(
+              `http://localhost:8080/manager/downloadWork?workName=${workName}`,
+              {
+                method: "get",
+                credentials: "include",
+              }
+            )
+              .then((response) => response.blob()) // 将响应转为 blob 对象
+              .then((blob) => {
+                // 创建一个 URL 链接指向下载文件
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob); // 创建一个指向文件的 URL
+                link.download = workName; // 设置下载文件的名字
+                link.click(); // 自动点击下载链接
+                URL.revokeObjectURL(link.href); // 清理 URL 对象
+              })
+              .catch((error) => {
+                console.error("下载文件失败:", error);
+                alert("下载失败！");
+              });
+          });
+        });
+      }
+
+      // 初始化分页
+      initPagination();
+
+      // JavaScript函数，监听下拉框的变化
+      document.getElementById("dropdown").onchange = function showSelection() {
+        var dropdown = document.getElementById("dropdown");
+        var selectedValue = dropdown.options[dropdown.selectedIndex].value;
+        //document.getElementById("selectedOption").textContent = selectedValue;
+        // 使用 fetch 获取后端数据并显示在饼状图中
+        fetch(
+          `http://localhost:8080/manager/getAwardWorkListOfCategory?category=${selectedValue}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.code == 200) {
+              console.log(data.data);
+              items = data.data; // 保存全部数据
+              renderTable(); // 初始化渲染
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>
