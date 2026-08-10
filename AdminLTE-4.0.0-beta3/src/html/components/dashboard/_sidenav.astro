@@ -1,0 +1,145 @@
+---
+import { convertPathToHtml } from "../../../utils/index.js";
+const { path, mainPage, page } = Astro.props;
+const htmlPath = convertPathToHtml(path);
+---
+
+<!--begin::Sidebar-->
+<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+  <!--begin::Sidebar Brand-->
+  <div class="sidebar-brand">
+    <!--begin::Brand Link-->
+    <a href={htmlPath + "/index.html"} class="brand-link">
+      <!--begin::Brand Image-->
+      <img
+        src={path + "/assets/img/jsjdsLogo.png"}
+        alt="AdminLTE Logo"
+        class="brand-image opacity-75 shadow"
+      />
+      <!--end::Brand Image-->
+      <!--begin::Brand Text-->
+      <span class="brand-text fw-light">计算机设计大赛</span>
+      <!--end::Brand Text-->
+    </a>
+    <!--end::Brand Link-->
+  </div>
+  <!--end::Sidebar Brand-->
+  <!--begin::Sidebar Wrapper-->
+  <div class="sidebar-wrapper">
+    <nav class="mt-2">
+      <!--begin::Sidebar Menu-->
+      <ul
+        class="nav sidebar-menu flex-column"
+        data-lte-toggle="treeview"
+        role="menu"
+        data-accordion="false"
+      >
+        <!-- <li class="nav-header">EXAMPLES</li> -->
+        <li class:list={["nav-item", mainPage === "logins" && "menu-open"]}>
+          <a
+            href="#"
+            class:list={["nav-link", mainPage === "logins" && "active"]}
+          >
+            <i class="nav-icon bi bi-box-arrow-in-right"></i>
+            <p>
+              登录
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/logins/student-login.html"}
+                class:list={["nav-link", page === "student-login" && "active"]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>学生登录</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/logins/teacher-login.html"}
+                class:list={["nav-link", page === "teacher-login" && "active"]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>教师登录</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/logins/reviewer-login.html"}
+                class:list={["nav-link", page === "reviewer-login" && "active"]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>审核登录</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/logins/judge-login.html"}
+                class:list={["nav-link", page === "judge-login" && "active"]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>评委登录</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/logins/manager-login.html"}
+                class:list={["nav-link", page === "manager-login" && "active"]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>管理登录</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class:list={["nav-item", mainPage === "registers" && "menu-open"]}>
+          <a
+            href="#"
+            class:list={["nav-link", mainPage === "registers" && "active"]}
+          >
+            <i class="nav-icon bi bi-box-arrow-in-right"></i>
+            <p>
+              注册
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/registers/student-register.html"}
+                class:list={[
+                  "nav-link",
+                  page === "student-register" && "active",
+                ]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>学生注册</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                href={htmlPath + "/registers/teacher-register.html"}
+                class:list={[
+                  "nav-link",
+                  page === "teacher-register" && "active",
+                ]}
+              >
+                <i class="nav-icon bi bi-circle"></i>
+                <p>教师注册</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <!--end::Sidebar Menu-->
+    </nav>
+  </div>
+  <!--end::Sidebar Wrapper-->
+</aside>
+<!--end::Sidebar-->

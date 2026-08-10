@@ -1,0 +1,407 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/judge-sidenav.astro";
+
+const title = "计算机设计大赛 省赛作品评分";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "judge";
+const page = "work-judge";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <style>
+      /* 弹窗样式 */
+      .modal {
+        display: none; /* 初始时隐藏 */
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">评分</p>
+          <table class="table table-bordered text-center table-valign-middle">
+            <thead>
+              <tr>
+                <th>作品大类</th>
+                <th>作品小类</th>
+                <th>作品名称</th>
+                <th>省赛</th>
+                <th>分数</th>
+                <th>操作</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="work-list">
+              <!-- 可以继续添加更多的行 -->
+            </tbody>
+          </table>
+          <!-- 添加分页控件 -->
+          <div class="pagination justify-content-center mt-3">
+            <button id="prevBtn" class="btn btn-outline-primary btn-sm"
+              >上一页</button
+            >
+            <span id="pageNumbers" class="mx-2"></span>
+            <button id="nextBtn" class="btn btn-outline-primary btn-sm"
+              >下一页</button
+            >
+          </div>
+
+          <div id="myModal" class="modal">
+            <div class="modal-content">
+              <span class="close">&times;</span>
+              <form id="judgeWorkForm">
+                <div class="input-group mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="0~100"
+                    name="score"
+                  />
+                </div>
+
+                <!--begin::Row-->
+                <div class="row">
+                  <div class="col-4">
+                    <div class="d-grid gap-2">
+                      <button
+                        id="submitBtn"
+                        type="button"
+                        class="btn btn-primary">提交</button
+                      >
+                    </div>
+                  </div>
+                </div>
+                <!--end::Row-->
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+
+    <script>
+      // 分页相关变量
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let items = []; // 存储全部数据
+
+      // 初始化函数
+      function initPagination() {
+        // 事件绑定
+        document
+          .getElementById("prevBtn")
+          .addEventListener("click", () => changePage(-1));
+        document
+          .getElementById("nextBtn")
+          .addEventListener("click", () => changePage(1));
+      }
+
+      // 渲染表格内容
+      function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = items.slice(start, end);
+
+        const workList = document.getElementById("work-list");
+        workList.innerHTML = pageData
+          .map(
+            (item) => `
+                <tr class="align-middle" key="${item.workName}">
+                  <td>${item.category}</td>
+                  <td>${item.subclass}</td>
+                  <td>${item.workName}</td>
+                  <td>${item.isProvinceCompetition == 1 ? "是" : "否"}</td>
+                  <td>${item.score == -1 ? "未评分" : item.score}</td>
+                  <td><button type="button" id="judge-work" class="btn btn-outline-primary" data-workName="${item.workName}">评分</button></td>
+                  <td><button type="button" id="download-work" class="btn btn-outline-primary" data-workName="${item.workName}">下载</button></td>
+                </tr>
+              `
+          )
+          .join("");
+
+        // 重新绑定事件
+        bindButtonEvents();
+        // 更新分页状态
+        renderPagination();
+      }
+
+      // 生成分页按钮
+      function renderPagination() {
+        const totalPages = Math.ceil(items.length / itemsPerPage);
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = "";
+
+        // 显示页码范围（最多显示5个）
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+          const btn = document.createElement("button");
+          btn.className = `btn btn-sm mx-1 ${i === currentPage ? "btn-primary" : "btn-outline-primary"}`;
+          btn.textContent = i;
+          btn.addEventListener("click", () => goToPage(i));
+          pageNumbers.appendChild(btn);
+        }
+
+        // 控制按钮状态
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+      }
+
+      // 分页控制函数
+      function changePage(step) {
+        currentPage = Math.max(1, currentPage + step);
+        renderTable();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+      }
+
+      // 按钮事件绑定函数
+      function bindButtonEvents() {
+        // 打开弹窗
+        document.querySelectorAll("#judge-work").forEach((button) => {
+          button.addEventListener("click", function () {
+            modal.style.display = "block";
+            workName = this.getAttribute("data-workName");
+            console.log(`评分作品 workName: ${workName}`);
+          });
+        });
+
+        // 给每个下载按钮添加点击事件
+        document.querySelectorAll("#download-work").forEach((button) => {
+          button.addEventListener("click", function () {
+            const workName = this.getAttribute("data-workName");
+            // 在这里处理下载逻辑
+            console.log(`下载作品 workName: ${workName}`);
+            fetch(
+              `http://localhost:8080/judge/downloadWork?workName=${workName}`,
+              {
+                method: "get",
+                credentials: "include",
+              }
+            )
+              .then((response) => response.blob()) // 将响应转为 blob 对象
+              .then((blob) => {
+                // 创建一个 URL 链接指向下载文件
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob); // 创建一个指向文件的 URL
+                link.download = workName; // 设置下载文件的名字
+                link.click(); // 自动点击下载链接
+                URL.revokeObjectURL(link.href); // 清理 URL 对象
+              })
+              .catch((error) => {
+                console.error("下载文件失败:", error);
+                alert("下载失败！");
+              });
+          });
+        });
+      }
+
+      // 初始化分页
+      initPagination();
+
+      window.onload = function () {
+        fetch(`http://localhost:8080/judge/getApprovedWork`, {
+          method: "get",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            if (data.code === 200) {
+              console.log(data.data);
+              items = data.data; // 保存全部数据
+              renderTable(); // 初始化渲染
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // window.onload = function () {
+      //   fetch(`http://localhost:8080/judge/getApprovedWork`, {
+      //     method: "get",
+      //     credentials: "include", // 确保带上 Cookies
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //   })
+      //     .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+      //     .then((data) => {
+      //       console.log(data.data);
+
+      //       if (data.code === 200) {
+      //         const workList = document.getElementById("work-list");
+      //         let items = data.data;
+      //         workList.innerHTML = items
+      //           .map(
+      //             (item) => `
+      //           <tr class="align-middle" key="${item.workName}">
+      //             <td>${item.category}</td>
+      //             <td>${item.subclass}</td>
+      //             <td>${item.workName}</td>
+      //             <td>${item.isProvinceCompetition == 1 ? "是" : "否"}</td>
+      //             <td>${item.score == -1 ? "未评分" : item.score}</td>
+      //             <td><button type="button" id="judge-work" class="btn btn-outline-primary" data-workName="${item.workName}">评分</button></td>
+      //             <td><button type="button" id="download-work" class="btn btn-outline-primary" data-workName="${item.workName}">下载</button></td>
+      //           </tr>
+      //         `
+      //           )
+      //           .join("");
+      //         // 打开弹窗
+      //         document.querySelectorAll("#judge-work").forEach((button) => {
+      //           button.addEventListener("click", function () {
+      //             modal.style.display = "block";
+      //             workName = this.getAttribute("data-workName");
+      //             console.log(`评分作品 workName: ${workName}`);
+      //           });
+      //         });
+
+      //         // 给每个下载按钮添加点击事件
+      //         document.querySelectorAll("#download-work").forEach((button) => {
+      //           button.addEventListener("click", function () {
+      //             const workName = this.getAttribute("data-workName");
+      //             // 在这里处理下载逻辑
+      //             console.log(`下载作品 workName: ${workName}`);
+      //             fetch(
+      //               `http://localhost:8080/judge/downloadWork?workName=${workName}`,
+      //               {
+      //                 method: "get",
+      //                 credentials: "include",
+      //               }
+      //             )
+      //               .then((response) => response.blob()) // 将响应转为 blob 对象
+      //               .then((blob) => {
+      //                 // 创建一个 URL 链接指向下载文件
+      //                 const link = document.createElement("a");
+      //                 link.href = URL.createObjectURL(blob); // 创建一个指向文件的 URL
+      //                 link.download = workName; // 设置下载文件的名字
+      //                 link.click(); // 自动点击下载链接
+      //                 URL.revokeObjectURL(link.href); // 清理 URL 对象
+      //               })
+      //               .catch((error) => {
+      //                 console.error("下载文件失败:", error);
+      //                 alert("下载失败！");
+      //               });
+      //           });
+      //         });
+      //       } else {
+      //         alert(data.message); // 操作失败时的提示
+      //       }
+      //     })
+      //     .catch((error) => {
+      //       console.error("请求失败:", error);
+      //       alert("登录失败，请重试。");
+      //     });
+      // };
+
+      // 获取元素
+
+      var modal = document.getElementById("myModal");
+      var span = document.getElementsByClassName("close")[0];
+      var submitBtn = document.getElementById("submitBtn");
+      var workName;
+
+      // 点击提交按钮
+      submitBtn.onclick = function () {
+        // 获取表单数据
+        const score = document.querySelector('[name="score"]').value;
+
+        fetch(
+          `http://localhost:8080/judge/judgeWork?score=${score}&workName=${workName}`,
+          {
+            method: "get",
+            credentials: "include", // 确保带上 Cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+
+            if (data.code === 200) {
+              // 保存成功后处理
+              modal.style.display = "none";
+              alert("评分成功");
+              window.location.href = "../judge/work-judge.html";
+            } else {
+              alert(data.message); // 保存失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+      // 关闭弹窗
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      // 点击弹窗外区域关闭弹窗
+      window.onclick = function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

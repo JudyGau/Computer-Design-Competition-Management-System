@@ -1,0 +1,559 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/manager-sidenav.astro";
+
+const title = "省赛管理员 - 评委管理";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "manager";
+const page = "judge-manage";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <style>
+      .input-group {
+        flex: 1;
+        min-width: 180px;
+      }
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #4a5568;
+        font-size: 1rem;
+        text-align: left;
+        transition: border-color 0.3s ease;
+      }
+      .form-input:read-only {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .group-form {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .input-group {
+          width: 100%;
+        }
+      }
+
+      /* 可选：添加微交互效果 */
+      .form-input:hover {
+        border-color: #cbd5e0;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #4e73df;
+        box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
+      }
+      /* 弹窗样式 */
+      .modal {
+        display: none; /* 初始时隐藏 */
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <div class="card" style="width: 100%;height:100%">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">评委列表</p>
+          <table class="table table-bordered text-center table-valign-middle">
+            <thead>
+              <tr class="align-middle">
+                <th>评委账号</th>
+                <th>密码</th>
+                <th>领域</th>
+                <th>操作</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="judge-list">
+              <!-- 可以继续添加更多的行 -->
+            </tbody>
+          </table>
+          <!-- 添加分页控件 -->
+          <div class="pagination justify-content-center mt-3">
+            <button id="prevBtn" class="btn btn-outline-primary btn-sm"
+              >上一页</button
+            >
+            <span id="pageNumbers" class="mx-2"></span>
+            <button id="nextBtn" class="btn btn-outline-primary btn-sm"
+              >下一页</button
+            >
+          </div>
+        </div>
+        <div class="card" style="width: 100%;height:100%">
+          <div class="card-body login-card-body">
+            
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+    <script>
+      // 分页相关变量
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let items = []; // 存储全部数据
+
+      // 初始化函数
+      function initPagination() {
+        // 事件绑定
+        document
+          .getElementById("prevBtn")
+          .addEventListener("click", () => changePage(-1));
+        document
+          .getElementById("nextBtn")
+          .addEventListener("click", () => changePage(1));
+      }
+
+      // 渲染表格内容
+      function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = items.slice(start, end);
+
+        const judgeList = document.getElementById("judge-list");
+        judgeList.innerHTML = pageData
+          .map(
+            (item) => `
+                <tr class="align-middle" key="${item.judgeId}">
+                  <td><div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control"
+                          value="${item.judgeId}"
+                          disabled
+                        />
+                      </div>
+                  </td>
+                  <td><div class="input-group">
+                        <input
+                          id="update-password"
+                          type="text"
+                          class="form-control"
+                          value="${item.password}"
+                        />
+                      </div>
+                  </td>
+                  <td>
+                    <div class="input-group">
+                      <select id="update-category"  class="form-control">
+                        <option value="${item.category}" selected disabled>${item.category}</option>
+                        <option value="软件应用与开发">软件应用与开发</option>
+                        <option value="微课与AI辅助教学">微课与AI辅助教学</option>
+                        <option value="物联网应用">物联网应用</option>
+                        <option value="大数据应用">大数据应用</option>
+                        <option value="人工智能应用">人工智能应用</option>
+                        <option value="信息可视化设计">信息可视化设计</option>
+                        <option value="数媒静态设计">数媒静态设计</option>
+                        <option value="数媒动漫与短片">数媒动漫与短片</option>
+                        <option value="数媒游戏与交互设计">数媒游戏与交互设计</option>
+                        <option value="计算机音乐创作">计算机音乐创作</option>
+                        <option value="国际生“汉学”">国际生“汉学”</option>
+                      </select>
+                    </div>
+                  </td>
+                  <td><button type="button" id="update-judge" class="btn btn-outline-primary" data-judgeId="${item.judgeId}">修改</button></td>
+                  <td><button type="button" id="delete-judge" class="btn btn-outline-danger" data-judgeId="${item.judgeId}">删除</button></td>
+                </tr>
+              `
+          )
+          .join("");
+
+        // 重新绑定事件
+        bindButtonEvents();
+        // 更新分页状态
+        renderPagination();
+      }
+
+      // 生成分页按钮
+      function renderPagination() {
+        const totalPages = Math.ceil(items.length / itemsPerPage);
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = "";
+
+        // 显示页码范围（最多显示5个）
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+          const btn = document.createElement("button");
+          btn.className = `btn btn-sm mx-1 ${i === currentPage ? "btn-primary" : "btn-outline-primary"}`;
+          btn.textContent = i;
+          btn.addEventListener("click", () => goToPage(i));
+          pageNumbers.appendChild(btn);
+        }
+
+        // 控制按钮状态
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+      }
+
+      // 分页控制函数
+      function changePage(step) {
+        currentPage = Math.max(1, currentPage + step);
+        renderTable();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+      }
+
+      // 按钮事件绑定函数
+      function bindButtonEvents() {
+        // 给每个修改按钮添加点击事件
+        document.querySelectorAll("#update-judge").forEach((button) => {
+          button.addEventListener("click", function () {
+            const judgeId = this.getAttribute("data-judgeId");
+            const formData = {
+              judgeId: judgeId,
+              password: document
+                .querySelector(`[key="${judgeId}"]`)
+                ?.querySelector("#update-password")?.value,
+              category: document
+                .querySelector(`[key="${judgeId}"]`)
+                ?.querySelector("#update-category")?.value,
+            };
+            // 在这里处理修改逻辑
+            console.log(`修改评委 judgeId: ${judgeId}`);
+            fetch(`http://localhost:8080/manager/updateJudge`, {
+              method: "post",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formData),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.code == 200) {
+                  alert("修改评委信息成功");
+                  window.location.href = "../manager/judge-manage.html";
+                } else {
+                  alert(data.message);
+                }
+              })
+              .catch((error) => {
+                console.error("请求失败:", error);
+                alert("请求失败，请重试。");
+              });
+          });
+        });
+
+        // 给每个删除按钮添加点击事件
+        document.querySelectorAll("#delete-judge").forEach((button) => {
+          button.addEventListener("click", function () {
+            const judgeId = this.getAttribute("data-judgeId");
+            // 在这里处理删除逻辑
+            console.log(`删除评委 judgeId: ${judgeId}`);
+            fetch(
+              `http://localhost:8080/manager/deleteJudge?judgeId=${judgeId}`,
+              {
+                method: "get",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            )
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.code == 200) {
+                  alert("删除评委成功");
+                  window.location.href = "../manager/judge-manage.html";
+                } else {
+                  alert(data.message);
+                }
+              })
+              .catch((error) => {
+                console.error("请求失败:", error);
+                alert("请求失败，请重试。");
+              });
+          });
+        });
+      }
+
+      // 初始化分页
+      initPagination();
+
+      window.onload = function () {
+        fetch(`http://localhost:8080/manager/getAllJudge`, {
+          method: "get",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.code === 200) {
+              console.log(data.data);
+              items = data.data; // 保存全部数据
+              renderTable(); // 初始化渲染
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // window.onload = function () {
+      //   fetch(`http://localhost:8080/manager/getAllJudge`, {
+      //     method: "get",
+      //     credentials: "include", // 确保带上 Cookies
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //   })
+      //     .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+      //     .then((data) => {
+      //       console.log(data.data);
+
+      //       if (data.code === 200) {
+      //         const judgeList = document.getElementById("judge-list");
+      //         let items = data.data;
+      //         judgeList.innerHTML = items
+      //           .map(
+      //             (item) => `
+      //           <tr class="align-middle" key="${item.judgeId}">
+      //             <td><div class="input-group">
+      //                   <input
+      //                     type="text"
+      //                     class="form-control"
+      //                     value="${item.judgeId}"
+      //                     disabled
+      //                   />
+      //                 </div>
+      //             </td>
+      //             <td><div class="input-group">
+      //                   <input
+      //                     id="update-password"
+      //                     type="text"
+      //                     class="form-control"
+      //                     value="${item.password}"
+      //                   />
+      //                 </div>
+      //             </td>
+      //             <td>
+      //               <div class="input-group">
+      //                 <select id="update-category"  class="form-control">
+      //                   <option value="${item.category}" selected disabled>${item.category}</option>
+      //                   <option value="软件应用与开发">软件应用与开发</option>
+      //                   <option value="微课与AI辅助教学">微课与AI辅助教学</option>
+      //                   <option value="物联网应用">物联网应用</option>
+      //                   <option value="大数据应用">大数据应用</option>
+      //                   <option value="人工智能应用">人工智能应用</option>
+      //                   <option value="信息可视化设计">信息可视化设计</option>
+      //                   <option value="数媒静态设计">数媒静态设计</option>
+      //                   <option value="数媒动漫与短片">数媒动漫与短片</option>
+      //                   <option value="数媒游戏与交互设计">数媒游戏与交互设计</option>
+      //                   <option value="计算机音乐创作">计算机音乐创作</option>
+      //                   <option value="国际生“汉学”">国际生“汉学”</option>
+      //                 </select>
+      //               </div>
+      //             </td>
+      //             <td><button type="button" id="update-judge" class="btn btn-outline-primary" data-judgeId="${item.judgeId}">修改</button></td>
+      //             <td><button type="button" id="delete-judge" class="btn btn-outline-danger" data-judgeId="${item.judgeId}">删除</button></td>
+      //           </tr>
+      //         `
+      //           )
+      //           .join("");
+
+      //         // 给每个修改按钮添加点击事件
+      //         document.querySelectorAll("#update-judge").forEach((button) => {
+      //           button.addEventListener("click", function () {
+      //             const judgeId = this.getAttribute("data-judgeId");
+      //             const formData = {
+      //               judgeId: judgeId,
+      //               password: document
+      //                 .querySelector(`[key="${judgeId}"]`)
+      //                 ?.querySelector("#update-password")?.value,
+      //               category: document
+      //                 .querySelector(`[key="${judgeId}"]`)
+      //                 ?.querySelector("#update-category")?.value,
+      //             };
+      //             // 在这里处理修改逻辑
+      //             console.log(`修改评委 judgeId: ${judgeId}`);
+      //             fetch(`http://localhost:8080/manager/updateJudge`, {
+      //               method: "post",
+      //               credentials: "include",
+      //               headers: {
+      //                 "Content-Type": "application/json",
+      //               },
+      //               body: JSON.stringify(formData),
+      //             })
+      //               .then((response) => response.json())
+      //               .then((data) => {
+      //                 if (data.code == 200) {
+      //                   alert("修改评委信息成功");
+      //                   window.location.href = "../manager/judge-manage.html";
+      //                 } else {
+      //                   alert(data.message);
+      //                 }
+      //               })
+      //               .catch((error) => {
+      //                 console.error("请求失败:", error);
+      //                 alert("请求失败，请重试。");
+      //               });
+      //           });
+      //         });
+
+      //         // 给每个删除按钮添加点击事件
+      //         document.querySelectorAll("#delete-judge").forEach((button) => {
+      //           button.addEventListener("click", function () {
+      //             const judgeId = this.getAttribute("data-judgeId");
+      //             // 在这里处理删除逻辑
+      //             console.log(`删除评委 judgeId: ${judgeId}`);
+      //             fetch(
+      //               `http://localhost:8080/manager/deleteJudge?judgeId=${judgeId}`,
+      //               {
+      //                 method: "get",
+      //                 credentials: "include",
+      //                 headers: {
+      //                   "Content-Type": "application/json",
+      //                 },
+      //               }
+      //             )
+      //               .then((response) => response.json())
+      //               .then((data) => {
+      //                 if (data.code == 200) {
+      //                   alert("删除评委成功");
+      //                   window.location.href = "../manager/judge-manage.html";
+      //                 } else {
+      //                   alert(data.message);
+      //                 }
+      //               })
+      //               .catch((error) => {
+      //                 console.error("请求失败:", error);
+      //                 alert("请求失败，请重试。");
+      //               });
+      //           });
+      //         });
+      //       } else {
+      //         alert(data.message); // 操作失败时的提示
+      //       }
+      //     })
+      //     .catch((error) => {
+      //       console.error("请求失败:", error);
+      //       alert("登录失败，请重试。");
+      //     });
+      // };
+
+      // 获取元素
+
+      var modal = document.getElementById("myModal");
+      var btn = document.getElementById("openBtn");
+      var span = document.getElementsByClassName("close")[0];
+      var submitBtn = document.getElementById("submitBtn");
+
+      // 打开弹窗
+      btn.onclick = function () {
+        modal.style.display = "block";
+      };
+
+      // 关闭弹窗
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      // 点击提交按钮
+      submitBtn.onclick = function () {
+        // 获取表单数据
+        var dropdown = document.getElementById("dropdown");
+        var selectedValue = dropdown.options[dropdown.selectedIndex].value;
+        const formData = {
+          judgeId: document.querySelector('[name="judgeId"]').value,
+          password: document.querySelector('[name="password"]').value,
+          category: selectedValue,
+        };
+
+        fetch("http://localhost:8080/manager/makeJudge", {
+          method: "POST",
+          credentials: "include", // 确保带上 Cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData), // 发送表单数据
+        })
+          .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+          .then((data) => {
+            console.log(data.data);
+            if (data.code === 200) {
+              // 保存成功后处理
+              modal.style.display = "none";
+              alert("新建成功");
+              window.location.href = "../manager/judge-manage.html";
+            } else {
+              alert(data.message); // 保存失败时的提示
+            }
+          })
+          .catch((error) => {
+            console.error("请求失败:", error);
+            alert("请求失败，请重试。");
+          });
+      };
+
+      // 点击弹窗外区域关闭弹窗
+      window.onclick = function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>

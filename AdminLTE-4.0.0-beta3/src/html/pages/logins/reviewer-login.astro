@@ -1,0 +1,133 @@
+---
+import Head from "@components/_head.astro";
+import Scripts from "@components/_scripts.astro";
+import Footer from "@components/dashboard/_footer.astro";
+import Topbar from "@components/dashboard/_topbar.astro";
+import Sidenav from "@components/dashboard/_sidenav.astro";
+
+const title = "评审 - 登录";
+const path = "../../../dist";
+const htmlPath = "..";
+const mainPage = "logins";
+const page = "reviewer-login";
+---
+
+<!doctype html>
+<html lang="en">
+  <!--begin::Head-->
+  <head>
+    <Head title={title} path={path} />
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+
+      <div class="card" style="height: 60%;">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">审核登录</p>
+
+          <!-- 修改了form的id -->
+          <form
+            id="loginForm"
+            action="http://localhost:8080/reviewerLogin"
+            method="post"
+          >
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="账号"
+                name="reviewerId"
+              />
+              <div class="input-group-text">
+                <span class="bi bi-person"></span>
+              </div>
+            </div>
+            <div class="input-group mb-3">
+              <input
+                type="password"
+                class="form-control"
+                placeholder="密码"
+                name="password"
+              />
+              <div class="input-group-text">
+                <span class="bi bi-lock-fill"></span>
+              </div>
+            </div>
+
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-8">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    value=""
+                    id="flexCheckDefault"
+                  />
+                  <label class="form-check-label" for="flexCheckDefault">
+                    记住我
+                  </label>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary">登录</button>
+                </div>
+              </div>
+            </div>
+            <!--end::Row-->
+          </form>
+
+          <p class="mb-1">
+            <a href="forgot-password.html">忘记密码</a>
+          </p>
+        </div>
+      </div>
+      <Footer />
+    </div>
+
+    <script>
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // 阻止默认的表单提交行为
+
+          // 获取表单数据
+          const formData = {
+            reviewerId: document.querySelector('[name="reviewerId"]').value,
+            password: document.querySelector('[name="password"]').value,
+          };
+
+          fetch("http://localhost:8080/reviewerLogin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(formData), // 发送表单数据
+          })
+            .then((response) => response.json()) // 假设后端返回的是 JSON 格式的响应
+            .then((data) => {
+              console.log(data);
+
+              if (data.code === 200) {
+                // 登录成功后处理
+                window.location.href = "../reviewer/work-review.html"; // 默认跳转到个人信息页面
+              } else {
+                alert(data.message); // 登录失败时的提示
+              }
+            })
+            .catch((error) => {
+              console.error("请求失败:", error);
+              alert("登录失败，请重试。");
+            });
+        });
+    </script>
+
+    <Scripts path={path} />
+  </body>
+</html>
